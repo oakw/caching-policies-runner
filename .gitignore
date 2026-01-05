@@ -1,4 +1,5 @@
 *__pycache__
 .venv
 
-traffic/models
+traffic/models/*
+!traffic/models/test-1
