@@ -15,6 +15,9 @@ class Request:
     def from_line(cls, line: str):
         parts = line.split(',')
         return cls(int(parts[0]), int(parts[1]), int(parts[2]))
+    
+    def __repr__(self):
+        return f"Request(timestamp={self.timestamp}, object_id={self.object_id}, object_size={self.object_size})"
         
 
 class TrafficReader:

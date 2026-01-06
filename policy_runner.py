@@ -44,7 +44,7 @@ def main():
     request_index = 0
     with tqdm.tqdm(total=request_count, desc="Simulating caching policy") as pbar:
         for req in traffic_reader.read_traffic():
-            hit = cache.access(req.object_id, req.timestamp, req.object_size)
+            hit = "hit" in cache.access(req.object_id, req.timestamp, req.object_size)
             state.on_access(req.object_id, req.timestamp, hit)
             pbar.update(1)
 

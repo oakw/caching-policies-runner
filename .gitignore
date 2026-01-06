@@ -3,3 +3,5 @@
 
 traffic/models/*
 !traffic/models/test-1
+
+tests/runs/*

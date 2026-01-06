@@ -14,7 +14,7 @@ class State:
     @property
     def current_size(self):
         if hasattr(self.storage, "data"):
-            return len(self.storage.data)
+            return sum(self.storage.data.values())
         return 0
 
     def on_access(self, key: int, timestamp: int, hit: bool):
@@ -39,3 +39,8 @@ class State:
             "access_count": self.access_count,
             "last_timestamp": self.last_timestamp,
         }
+
+    def __repr__(self):
+        return (f"State(capacity={self.capacity}, current_size={self.current_size}, "
+                f"hit_count={self.hit_count}, miss_count={self.miss_count}, "
+                f"access_count={self.access_count}, last_timestamp={self.last_timestamp})")
