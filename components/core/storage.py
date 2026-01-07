@@ -12,6 +12,9 @@ class Storage:
     def evict(self, key):
         del self.data[key]
 
+    def used_capacity(self):
+        return sum(self.data.values())
+
     def is_full(self, next_insert_size = 0):
         return (sum(self.data.values()) + next_insert_size) >= self.capacity
 

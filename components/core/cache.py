@@ -17,13 +17,14 @@ class Cache:
 
         self.policy.on_access(key, timestamp)
 
+        used_capacity = self.storage.used_capacity()
         if not hit:
-            if self.storage.is_full(size - 1):
+            if used_capacity + size > self.storage.capacity:
                 # Need to evict items
                 actions.append("select-victims")
 
                 victims = self.policy.select_victims(self.storage.keys())
-                while self.storage.is_full(size - sum([self.storage.data[v] for v in victims]) - 1):
+                while used_capacity + size - sum([self.storage.data[v] for v in victims]) > self.storage.capacity:
                     # Continue selecting victims until enough space is freed
                     victims_left = [k for k in self.storage.keys() if k not in victims]
                     if not victims_left:
@@ -31,7 +32,7 @@ class Cache:
 
                     victims.extend(self.policy.select_victims(victims_left))
 
-                if not self.storage.is_full(size - sum([self.storage.data[v] for v in victims]) - 1):
+                if used_capacity + size - sum([self.storage.data[v] for v in victims]) <= self.storage.capacity:
                     # Has found enough space by evicting victims
                     for victim in victims:
                         actions.append(f"evict-{victim}")

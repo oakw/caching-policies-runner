@@ -1,0 +1,74 @@
+[
+    {
+        "policy": "lru",
+        "model": "w-1",
+        "cache_size": 100,
+        "request_count": 1000000
+    },
+    {
+        "policy": "lru",
+        "model": "w-2",
+        "cache_size": 100,
+        "request_count": 1000000
+    },
+    {
+        "policy": "lru",
+        "model": "w-1",
+        "cache_size": 1000,
+        "request_count": 1000000
+    },
+    {
+        "policy": "lru",
+        "model": "w-2",
+        "cache_size": 1000,
+        "request_count": 1000000
+    },
+    {
+        "policy": "lru",
+        "model": "w-1",
+        "cache_size": 10000,
+        "request_count": 1000000
+    },
+    {
+        "policy": "lru",
+        "model": "w-2",
+        "cache_size": 10000,
+        "request_count": 1000000
+    },
+    {
+        "policy": "lfu",
+        "model": "w-1",
+        "cache_size": 100,
+        "request_count": 1000000
+    },
+    {
+        "policy": "lfu",
+        "model": "w-2",
+        "cache_size": 100,
+        "request_count": 1000000
+    },
+    {
+        "policy": "lfu",
+        "model": "w-1",
+        "cache_size": 1000,
+        "request_count": 1000000
+    },
+    {
+        "policy": "lfu",
+        "model": "w-2",
+        "cache_size": 1000,
+        "request_count": 1000000
+    },
+    {
+        "policy": "lfu",
+        "model": "w-1",
+        "cache_size": 10000,
+        "request_count": 1000000
+    },
+    {
+        "policy": "lfu",
+        "model": "w-2",
+        "cache_size": 10000,
+        "request_count": 1000000
+    }
+]
