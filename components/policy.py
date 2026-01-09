@@ -14,13 +14,13 @@ class Policy:
     def on_evict(self, key):
         pass
 
-    def select_victims(self, keys):
-        if len(keys) == 0:
+    def select_victims(self, key_pool: set, excluded_keys: set = None):
+        if len(key_pool) == 0:
             return []
             
         utilities = {
             key: self.utility_model.compute(key, self.features)
-            for key in keys
+            for key in (key_pool - (excluded_keys or set()))
         }
 
         return [self.ranker.select(utilities)]

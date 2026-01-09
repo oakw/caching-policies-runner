@@ -5,19 +5,24 @@ class Request:
     timestamp: int
     object_id: int
     object_size: int
+    response_time: float
     
-    def __init__(self, timestamp: int = 0, object_id: int = 0, object_size: int = 0):
+    def __init__(self, timestamp: int = 0, object_id: int = 0, object_size: int = 0, response_time: float = 0):
         self.timestamp = timestamp
         self.object_id = object_id
         self.object_size = object_size
+        self.response_time = response_time
     
     @classmethod
     def from_line(cls, line: str):
-        parts = line.split(',')
-        return cls(int(parts[0]), int(parts[1]), int(parts[2]))
+        if '\t' in line:
+            parts = line.split('\t')
+        else:
+            parts = line.split(',')
+        return cls(int(parts[0]), int(parts[1]), int(parts[2]), float(parts[3]) if len(parts) > 3 else 0)
     
     def __repr__(self):
-        return f"Request(timestamp={self.timestamp}, object_id={self.object_id}, object_size={self.object_size})"
+        return f"Request(timestamp={self.timestamp}, object_id={self.object_id}, object_size={self.object_size}, response_time={self.response_time})"
         
 
 class TrafficReader:
@@ -44,4 +49,3 @@ class TrafficReader:
                 line = line.strip()
                 if line:
                     yield Request.from_line(line)
-        
