@@ -5,7 +5,7 @@ import tqdm
 import re
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-RUN_REPEATS = 3
+RUN_REPEATS = 1
 
 TIME_TEMPLATE = "<user>%U</user><system>%S</system><elapsed>%e</elapsed><max-rss>%M</max-rss><exit-code>%x</exit-code><cpu>%P</cpu>"
 
@@ -21,8 +21,8 @@ with open (os.path.join(BASE_DIR, 'config.json'), 'r') as file:
             "python", f"{BASE_DIR}/../policy_runner.py", 
             "--policy", run['policy'], 
             "--model", run['model'], 
-            "--request-count", str(run.get('request_count', '')), 
-            "--cache-size", str(run.get('cache_size'))
+            "--request-count", str(int(run.get('request_count', ''))), 
+            "--cache-size", str(int(run.get('cache_size', ''))),
         ], text=True, capture_output=True)
 
         # Parse stats from stdout
@@ -132,4 +132,4 @@ with open(os.path.join(BASE_DIR, 'report.md'), 'w') as report_file:
     report_file.write("Last updated at: " + subprocess.getoutput("date") + "\n\n")
     report_file.write(md)
     report_file.write("\n")
-    report_file.write(f"\n*Values marked with an asterisk (\*) indicate variance across {RUN_REPEATS} runs.*\n")
+    report_file.write(f"\n*Values marked with an asterisk (\\*) indicate variance across {RUN_REPEATS} runs.*\n")

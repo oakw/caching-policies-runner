@@ -1,3 +1,5 @@
+from components.utility.simple import SimpleUtility
+
 class Policy:
     def __init__(self, features, utility_model, ranker):
         self.features = features
@@ -14,13 +16,17 @@ class Policy:
     def on_evict(self, key):
         pass
 
-    def select_victims(self, key_pool: set, excluded_keys: set = None):
+    def select_victims(self, key_pool: set):
         if len(key_pool) == 0:
             return []
+
+        if isinstance(self.utility_model, SimpleUtility) and self.utility_model.lowest_utility_accessible():
+            for key in self.utility_model.feature.sorted_keys():
+                if key in key_pool:
+                    return [key]
             
         utilities = {
-            key: self.utility_model.compute(key, self.features)
-            for key in (key_pool - (excluded_keys or set()))
+            key: self.utility_model.compute(key, self.features) for key in key_pool
         }
 
         return [self.ranker.select(utilities)]
