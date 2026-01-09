@@ -30,7 +30,7 @@ class Cache:
                     if len(all_keys) == len(victims):
                         break
 
-                    victims.update(self.policy.select_victims(all_keys - victims))
+                    victims.update(self.policy.select_victims(all_keys, excluded_keys=victims))
 
                 if used_capacity + size - sum([self.storage.data[v] for v in victims]) <= self.storage.capacity:
                     # Has found enough space by evicting victims
