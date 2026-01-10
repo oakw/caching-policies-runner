@@ -14,12 +14,12 @@ class Policy:
     def on_evict(self, key):
         pass
 
-    def select_victims(self, key_pool: set):
+    def select_victims(self, key_pool: set, timestamp=None):
         if len(key_pool) == 0:
             return []
             
         utilities = {
-            key: self.utility_model.compute(key, self.features) for key in key_pool
+            key: self.utility_model.compute(key, self.features, timestamp=timestamp) for key in key_pool
         }
 
         return [self.ranker.select(utilities)]

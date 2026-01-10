@@ -22,5 +22,19 @@
         "model": "wiki-t-10",
         "cache_size": 1E7,
         "request_count": 100000
+    },
+    {
+        "policy": "lfu-sliding",
+        "model": "wiki-t-10",
+        "cache_size": 1E7,
+        "request_count": 100000,
+        "window_size": 25
+    },
+    {
+        "policy": "lfu-sliding",
+        "model": "wiki-t-10",
+        "cache_size": 1E8,
+        "request_count": 100000,
+        "window_size": 30
     }
 ]

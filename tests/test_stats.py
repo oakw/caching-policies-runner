@@ -1,3 +1,6 @@
+"""
+    Run tests using "python -m pytest tests/test_stats.py"
+"""
 import math
 import pytest
 import os
@@ -44,7 +47,7 @@ def test_policy_hit_miss_ratios(policy_name, policy_factory, capacity):
 
     for req in reader.read_traffic():
         actions = cache.access(req.object_id, req.timestamp, req.object_size)
-        state.on_access(req.object_id, req.timestamp, "hit" in actions)
+        state.on_access(req.object_id, req.timestamp, "hit" in actions, req.object_size, req.response_time)
         log_info_to_file(f"{policy_name}-capacity-{capacity}", f"Request: {req}, Actions: {actions}, State: {state}")
 
     stats = state.to_dict()

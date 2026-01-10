@@ -24,13 +24,13 @@ class Cache:
                 actions.append("select-victims")
 
                 all_keys = self.storage.keys()
-                victims = set(self.policy.select_victims(all_keys))
+                victims = set(self.policy.select_victims(all_keys, timestamp=timestamp))
                 while used_capacity + size - sum([self.storage.data[v] for v in victims]) > self.storage.capacity:
                     # Continue selecting victims until enough space is freed
                     if len(all_keys) == len(victims):
                         break
 
-                    victims.update(self.policy.select_victims(all_keys - victims))
+                    victims.update(self.policy.select_victims(all_keys - victims, timestamp=timestamp))
 
                 if used_capacity + size - sum([self.storage.data[v] for v in victims]) <= self.storage.capacity:
                     # Has found enough space by evicting victims
