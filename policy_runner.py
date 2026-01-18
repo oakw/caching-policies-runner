@@ -9,6 +9,7 @@ from components.state.state import State
 from policies.lfu import LFU
 from policies.lru import LRU
 from policies.lfu_sliding import LFU_Sliding
+from policies.lfu_aging import LFU_Aging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("caching-policies-runner")
@@ -17,6 +18,7 @@ POLICIES = {
     "lru": LRU,
     "lfu-sliding": LFU_Sliding,
     "lfu": LFU,
+    "lfu-aging": LFU_Aging
 }
 
 def main():
@@ -26,7 +28,8 @@ def main():
     parser.add_argument("--request-count", type=int, required=False, help="Number of requests to process")
     parser.add_argument("--cache-size", type=int, required=False, help="Cache size", default=100)
     parser.add_argument("--window-size", type=int, required=False, help="Sliding window size (timestamp units)", default=100)
-    
+    parser.add_argument("--tau", type=float, required=False, help="Decay constant for LFU aging", default=3600.0)
+
     args = parser.parse_args()
     
     logger.info(f"Running policy {args.policy} with model {args.model}")
@@ -39,6 +42,8 @@ def main():
     policy_class_args = {}
     if args.policy == "lfu-sliding":
         policy_class_args['window_size'] = args.window_size
+    elif args.policy == "lfu-aging":
+        policy_class_args['tau'] = args.tau
 
     cache = Cache(policy_class(**policy_class_args), Storage(args.cache_size))
     state = State().attach_to(cache)

@@ -1,3 +1,4 @@
+import math
 from .base import Feature
 
 class FrequencyFeature(Feature):
@@ -26,3 +27,23 @@ class FrequencyFeature(Feature):
             else:
                 break
         return count
+
+    def decayed_frequency(self, key, now, tau):
+        """Continuous exponential decay of frequency.
+        Returns sum(exp(-(now - t)/tau)) over all access timestamps for key.
+        """
+        times = self.access_times.get(key, [])
+
+        if not times:
+            return 0.0
+        total = 0.0
+
+        for t in times:
+            dt = now - t
+            if dt < 0:
+                dt = 0 # This shouldnt happen though
+
+            total += math.exp(-(dt / tau))
+
+        return total
+
