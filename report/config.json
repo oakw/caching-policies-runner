@@ -522,5 +522,89 @@
         "cache_size": 1E5,
         "request_count": 100000,
         "tau": 1000.0
+    },
+    {
+        "policy": "two-segment",
+        "model": "wiki-t-10",
+        "cache_size": 1E8,
+        "request_count": 100000,
+        "protected_fraction": 0.5
+    },
+    {
+        "policy": "two-segment",
+        "model": "wiki-t-10",
+        "cache_size": 1E7,
+        "request_count": 100000,
+        "protected_fraction": 0.5
+    },
+    {
+        "policy": "two-segment",
+        "model": "wiki-t-10",
+        "cache_size": 1E6,
+        "request_count": 100000,
+        "protected_fraction": 0.5
+    },
+    {
+        "policy": "two-segment",
+        "model": "wiki-t-10",
+        "cache_size": 1E5,
+        "request_count": 100000,
+        "protected_fraction": 0.5
+    },
+    {
+        "policy": "two-segment",
+        "model": "wiki-t-10",
+        "cache_size": 1E8,
+        "request_count": 100000,
+        "protected_fraction": 0.8
+    },
+    {
+        "policy": "two-segment",
+        "model": "wiki-t-10",
+        "cache_size": 1E7,
+        "request_count": 100000,
+        "protected_fraction": 0.8
+    },
+    {
+        "policy": "two-segment",
+        "model": "docker-registry-processed",
+        "cache_size": 1E8,
+        "request_count": 100000,
+        "protected_fraction": 0.5
+    },
+    {
+        "policy": "two-segment",
+        "model": "docker-registry-processed",
+        "cache_size": 1E7,
+        "request_count": 100000,
+        "protected_fraction": 0.5
+    },
+    {
+        "policy": "two-segment",
+        "model": "docker-registry-processed",
+        "cache_size": 1E6,
+        "request_count": 100000,
+        "protected_fraction": 0.5
+    },
+    {
+        "policy": "two-segment",
+        "model": "docker-registry-processed",
+        "cache_size": 1E5,
+        "request_count": 100000,
+        "protected_fraction": 0.5
+    },
+    {
+        "policy": "two-segment",
+        "model": "docker-registry-processed",
+        "cache_size": 1E8,
+        "request_count": 100000,
+        "protected_fraction": 0.8
+    },
+    {
+        "policy": "two-segment",
+        "model": "docker-registry-processed",
+        "cache_size": 1E7,
+        "request_count": 100000,
+        "protected_fraction": 0.8
     }
 ]

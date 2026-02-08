@@ -32,6 +32,7 @@ with open (os.path.join(BASE_DIR, 'config.json'), 'r') as file:
             "--cms-width", str(int(run.get('cms_width', 100))),
             "--cms-depth", str(int(run.get('cms_depth', 10))),
             "--size-utility", str(run.get('size_utility', 'freq_over_size')),
+            "--protected-fraction", str(float(run.get('protected_fraction', 0.5))),
         ], text=True, capture_output=True)
         return (i, run, result)
 

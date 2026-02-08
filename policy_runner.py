@@ -12,6 +12,7 @@ from policies.lfu_sliding import LFU_Sliding
 from policies.lfu_aging import LFU_Aging
 from policies.lfu_doorkeeper import LFU_Doorkeeper
 from policies.lfu_byte import LFU_Byte
+from policies.two_segment import TwoSegmentPolicy
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("caching-policies-runner")
@@ -23,6 +24,7 @@ POLICIES = {
     "lfu-aging": LFU_Aging,
     "lfu-doorkeeper": LFU_Doorkeeper,
     "lfu-byte": LFU_Byte,
+    "two-segment": TwoSegmentPolicy,
 }
 
 def main():
@@ -45,6 +47,13 @@ def main():
         default="freq_over_size",
         choices=["freq_over_size", "freq_times_size"],
         help="Size-aware utility mode (only for lfu-byte)",
+    )
+    parser.add_argument(
+        "--protected-fraction",
+        type=float,
+        required=False,
+        default=0.5,
+        help="Protected segment fraction in (0,1) for two-segment policy (object-count based)",
     )
 
     args = parser.parse_args()
@@ -75,6 +84,8 @@ def main():
         )
     elif args.policy == "lfu-byte":
         policy_factory_args.update(dict(storage=storage, mode=args.size_utility))
+    elif args.policy == "two-segment":
+        policy_factory_args.update(dict(protected_fraction=args.protected_fraction))
 
     policy_obj = policy_factory(**policy_factory_args)
 
