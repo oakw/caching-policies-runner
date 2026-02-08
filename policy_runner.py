@@ -11,6 +11,7 @@ from policies.lru import LRU
 from policies.lfu_sliding import LFU_Sliding
 from policies.lfu_aging import LFU_Aging
 from policies.lfu_doorkeeper import LFU_Doorkeeper
+from policies.lfu_byte import LFU_Byte
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("caching-policies-runner")
@@ -21,6 +22,7 @@ POLICIES = {
     "lfu": LFU,
     "lfu-aging": LFU_Aging,
     "lfu-doorkeeper": LFU_Doorkeeper,
+    "lfu-byte": LFU_Byte,
 }
 
 def main():
@@ -36,6 +38,14 @@ def main():
     parser.add_argument("--cms-delta", type=float, required=False, default=1e-6, help="CMS delta (failure probability) for doorkeeper")
     parser.add_argument("--cms-width", type=int, required=False, default=None, help="CMS width override for doorkeeper")
     parser.add_argument("--cms-depth", type=int, required=False, default=None, help="CMS depth override for doorkeeper")
+    parser.add_argument(
+        "--size-utility",
+        type=str,
+        required=False,
+        default="freq_over_size",
+        choices=["freq_over_size", "freq_times_size"],
+        help="Size-aware utility mode (only for lfu-byte)",
+    )
 
     args = parser.parse_args()
     
@@ -45,7 +55,9 @@ def main():
     if not policy_factory:
         logger.error(f"Unknown policy: {args.policy}")
         return
-    
+
+    storage = Storage(args.cache_size)
+
     policy_factory_args = {}
     if args.policy == "lfu-sliding":
         policy_factory_args['window_size'] = args.window_size
@@ -61,6 +73,8 @@ def main():
                 depth=args.cms_depth,
             )
         )
+    elif args.policy == "lfu-byte":
+        policy_factory_args.update(dict(storage=storage, mode=args.size_utility))
 
     policy_obj = policy_factory(**policy_factory_args)
 
@@ -70,7 +84,7 @@ def main():
     else:
         eviction_policy = policy_obj
 
-    cache = Cache(eviction_policy, Storage(args.cache_size), admission_policy=admission_policy)
+    cache = Cache(eviction_policy, storage, admission_policy=admission_policy)
     state = State().attach_to(cache)
 
     traffic_reader = TrafficReader(args.model)

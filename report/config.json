@@ -24,6 +24,18 @@
         "request_count": 100000
     },
     {
+        "policy": "lfu",
+        "model": "wiki-t-10",
+        "cache_size": 1E6,
+        "request_count": 100000
+    },
+    {
+        "policy": "lfu",
+        "model": "wiki-t-10",
+        "cache_size": 1E5,
+        "request_count": 100000
+    },
+    {
         "policy": "lfu-doorkeeper",
         "model": "wiki-t-10",
         "cache_size": 1E8,
@@ -106,6 +118,62 @@
         "tau": 1000.0
     },
     {
+        "policy": "lfu-byte",
+        "model": "wiki-t-10",
+        "cache_size": 1E8,
+        "request_count": 100000,
+        "size_utility": "freq_over_size"
+    },
+    {
+        "policy": "lfu-byte",
+        "model": "wiki-t-10",
+        "cache_size": 1E7,
+        "request_count": 100000,
+        "size_utility": "freq_over_size"
+    },
+    {
+        "policy": "lfu-byte",
+        "model": "wiki-t-10",
+        "cache_size": 1E6,
+        "request_count": 100000,
+        "size_utility": "freq_over_size"
+    },
+    {
+        "policy": "lfu-byte",
+        "model": "wiki-t-10",
+        "cache_size": 1E5,
+        "request_count": 100000,
+        "size_utility": "freq_over_size"
+    },
+    {
+        "policy": "lfu-byte",
+        "model": "wiki-t-10",
+        "cache_size": 1E8,
+        "request_count": 100000,
+        "size_utility": "freq_times_size"
+    },
+    {
+        "policy": "lfu-byte",
+        "model": "wiki-t-10",
+        "cache_size": 1E7,
+        "request_count": 100000,
+        "size_utility": "freq_times_size"
+    },
+    {
+        "policy": "lfu-byte",
+        "model": "wiki-t-10",
+        "cache_size": 1E6,
+        "request_count": 100000,
+        "size_utility": "freq_times_size"
+    },
+    {
+        "policy": "lfu-byte",
+        "model": "wiki-t-10",
+        "cache_size": 1E5,
+        "request_count": 100000,
+        "size_utility": "freq_times_size"
+    },
+    {
         "policy": "lru",
         "model": "docker-registry-processed",
         "cache_size": 1E8,
@@ -127,6 +195,18 @@
         "policy": "lfu",
         "model": "docker-registry-processed",
         "cache_size": 1E7,
+        "request_count": 100000
+    },
+    {
+        "policy": "lfu",
+        "model": "docker-registry-processed",
+        "cache_size": 1E6,
+        "request_count": 100000
+    },
+    {
+        "policy": "lfu",
+        "model": "docker-registry-processed",
+        "cache_size": 1E5,
         "request_count": 100000
     },
     {
@@ -210,6 +290,62 @@
         "cache_size": 1E8,
         "request_count": 100000,
         "tau": 1000.0
+    },
+    {
+        "policy": "lfu-byte",
+        "model": "docker-registry-processed",
+        "cache_size": 1E8,
+        "request_count": 100000,
+        "size_utility": "freq_over_size"
+    },
+    {
+        "policy": "lfu-byte",
+        "model": "docker-registry-processed",
+        "cache_size": 1E7,
+        "request_count": 100000,
+        "size_utility": "freq_over_size"
+    },
+    {
+        "policy": "lfu-byte",
+        "model": "docker-registry-processed",
+        "cache_size": 1E6,
+        "request_count": 100000,
+        "size_utility": "freq_over_size"
+    },
+    {
+        "policy": "lfu-byte",
+        "model": "docker-registry-processed",
+        "cache_size": 1E5,
+        "request_count": 100000,
+        "size_utility": "freq_over_size"
+    },
+    {
+        "policy": "lfu-byte",
+        "model": "docker-registry-processed",
+        "cache_size": 1E8,
+        "request_count": 100000,
+        "size_utility": "freq_times_size"
+    },
+    {
+        "policy": "lfu-byte",
+        "model": "docker-registry-processed",
+        "cache_size": 1E7,
+        "request_count": 100000,
+        "size_utility": "freq_times_size"
+    },
+    {
+        "policy": "lfu-byte",
+        "model": "docker-registry-processed",
+        "cache_size": 1E6,
+        "request_count": 100000,
+        "size_utility": "freq_times_size"
+    },
+    {
+        "policy": "lfu-byte",
+        "model": "docker-registry-processed",
+        "cache_size": 1E5,
+        "request_count": 100000,
+        "size_utility": "freq_times_size"
     },
     {
         "policy": "lru",

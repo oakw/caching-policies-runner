@@ -31,6 +31,7 @@ with open (os.path.join(BASE_DIR, 'config.json'), 'r') as file:
             "--cms-delta", str(float(run.get('cms_delta', 0.1))),
             "--cms-width", str(int(run.get('cms_width', 100))),
             "--cms-depth", str(int(run.get('cms_depth', 10))),
+            "--size-utility", str(run.get('size_utility', 'freq_over_size')),
         ], text=True, capture_output=True)
         return (i, run, result)
 
@@ -103,19 +104,33 @@ with open (os.path.join(BASE_DIR, 'config.json'), 'r') as file:
                 timing=timing
             ))
 
-# Group results by configuration (policy, model, cache_size)
+# Group results by configuration
+def group_key(run: dict):
+    items = []
+    for k in sorted(run.keys()):
+        if k == "request_count":
+            continue
+        items.append((k, run[k]))
+    return tuple(items)
+
+
+def group_label_for_table(run: dict) -> dict:
+    result = {"policy": run.get("policy")}
+    for key in sorted(run.keys()):
+        if key != "policy" and key != "request_count":
+            result[key] = run.get(key)
+    return result
+
 grouped_results = {}
 for result in all_results:
-    key = (result['run']['policy'], result['run']['model'], result['run']['cache_size'])
-    if key not in grouped_results:
-        grouped_results[key] = []
-    grouped_results[key].append(result)
+    key = group_key(result["run"])
+    grouped_results.setdefault(key, []).append(result)
 
 # Calculate averages for each group
 averaged_results = []
 for key, results in grouped_results.items():
-    policy, model, cache_size = key
-    
+    run0 = results[0]["run"]
+
     avg_stats = {}
     for stat in ['hits', 'misses', 'accesses', 'current_size', 'hit_object_size_sum', 'hit_response_time_sum']:
         values = [r['stats'][stat] for r in results]
@@ -124,7 +139,7 @@ for key, results in grouped_results.items():
             # Indicate that there was variance with an asterisk
             avg_stats[stat] = f"{avg_value:.1f}*"
         else:
-            avg_stats[stat] = avg_value
+            avg_stats[stat] = f"{avg_value:.1f}"
 
     avg_timing = {
         'user_time': sum(r['timing']['user_time'] for r in results) / len(results),
@@ -133,9 +148,9 @@ for key, results in grouped_results.items():
         'max_rss': sum(r['timing']['max_rss'] for r in results) / len(results),
         'exit_code': results[0]['timing']['exit_code']
     }
-    
+
     averaged_results.append({
-        'run': {'policy': policy, 'model': model, 'cache_size': cache_size},
+        'run': group_label_for_table(run0),
         'stats': avg_stats,
         'timing': avg_timing
     })
@@ -143,10 +158,26 @@ for key, results in grouped_results.items():
 # Sort by policy, cache size, and model
 averaged_results.sort(key=lambda x: (x['run']['policy'], x['run']['cache_size'], x['run']['model']))
 
-md = "| Policy | Model | Cache Size | Hits | Misses | Accesses | Hit Object Size Sum | Hit Response Time Sum | User Time | Elapsed Time | Max RSS | Exit Code |"
-md += "\n|--------|-------|------------|------|--------|----------|---------------------|----------------------|-----------|--------------|---------|-----------|"
+md = "| Policy | Model | Cache Size | Size Utility | Admission Threshold | Hits | Misses | Accesses | Hit Object Size Sum | Hit Response Time Sum | User Time | Elapsed Time | Max RSS | Exit Code |"
+md += "\n|--------|-------|------------|--------------|---------------------|------|--------|----------|---------------------|----------------------|-----------|--------------|---------|-----------|"
 for result in averaged_results:
-    md += f"\n| {result['run']['policy']} | {result['run']['model']} | {int(result['run']['cache_size'])} | {result['stats']['hits']:.1f} | {result['stats']['misses']:.1f} | {result['stats']['accesses']:.1f} | {result['stats']['hit_object_size_sum']:.1f} | {result['stats']['hit_response_time_sum']:.2f} | {result['timing']['user_time']:.3f} | {result['timing']['elapsed_time']:.3f} | {result['timing']['max_rss']:.1f} | {result['timing']['exit_code']} |"
+    md += (
+        f"\n| {result['run'].get('policy')}"
+        f" | {result['run'].get('model')}"
+        f" | {result['run'].get('cache_size')}"
+        f" | {result['run'].get('size_utility') or ''}"
+        f" | {result['run'].get('admission_threshold') or ''}"
+        f" | {result['stats']['hits']}"
+        f" | {result['stats']['misses']}"
+        f" | {result['stats']['accesses']}"
+        f" | {result['stats']['hit_object_size_sum']}"
+        f" | {result['stats']['hit_response_time_sum']}"
+        f" | {result['timing']['user_time']}"
+        f" | {result['timing']['elapsed_time']}"
+        f" | {result['timing']['max_rss']}"
+        f" | {result['timing']['exit_code']}"
+        " |"
+    )
 
 with open(os.path.join(BASE_DIR, 'report.md'), 'w') as report_file:
     report_file.write("# Caching Policies Report\n\n")

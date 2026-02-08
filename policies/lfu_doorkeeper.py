@@ -13,7 +13,6 @@ def LFU_Doorkeeper(
     depth: int | None = None,
     conservative: bool = True,
 ):
-    """Factory returning (eviction_policy, admission_policy)."""
     frequency = FrequencyFeature()
     utility = SimpleUtility(frequency)
     ranker = MinUtilityRanker()
