@@ -2,9 +2,10 @@ from components.policy import Policy
 from components.core.storage import Storage
 
 class Cache:
-    def __init__(self, policy: Policy, storage: Storage):
+    def __init__(self, policy: Policy, storage: Storage, admission_policy=None):
         self.policy = policy
         self.storage = storage
+        self.admission_policy = admission_policy
 
     def access(self, key: int, timestamp: int, size: int) -> list[str]:
         actions = []
@@ -17,8 +18,15 @@ class Cache:
 
         self.policy.on_access(key, timestamp)
 
+        if self.admission_policy is not None:
+            self.admission_policy.on_access(key, timestamp, size, hit)
+
         used_capacity = self.storage.used_capacity()
         if not hit:
+            if self.admission_policy is not None and not self.admission_policy.accept(key, timestamp, size):
+                actions.append("reject")
+                return actions
+
             if used_capacity + size > self.storage.capacity:
                 # Need to evict items
                 actions.append("select-victims")

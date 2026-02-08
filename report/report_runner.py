@@ -26,6 +26,11 @@ with open (os.path.join(BASE_DIR, 'config.json'), 'r') as file:
             "--request-count", str(int(run.get('request_count', ''))),
             "--window-size", str(int(run.get('window_size', 100))),
             "--cache-size", str(int(run.get('cache_size', ''))),
+            "--admission-threshold", str(int(run.get('admission_threshold', 2))),
+            "--cms-epsilon", str(float(run.get('cms_epsilon', 0.1))),
+            "--cms-delta", str(float(run.get('cms_delta', 0.1))),
+            "--cms-width", str(int(run.get('cms_width', 100))),
+            "--cms-depth", str(int(run.get('cms_depth', 10))),
         ], text=True, capture_output=True)
         return (i, run, result)
 

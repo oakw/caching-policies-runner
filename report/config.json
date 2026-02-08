@@ -24,6 +24,60 @@
         "request_count": 100000
     },
     {
+        "policy": "lfu-doorkeeper",
+        "model": "wiki-t-10",
+        "cache_size": 1E8,
+        "request_count": 100000,
+        "admission_threshold": 2,
+        "cms_epsilon": 0.001,
+        "cms_delta": 1e-6
+    },
+    {
+        "policy": "lfu-doorkeeper",
+        "model": "wiki-t-10",
+        "cache_size": 1E7,
+        "request_count": 100000,
+        "admission_threshold": 2,
+        "cms_epsilon": 0.001,
+        "cms_delta": 1e-6
+    },
+    {
+        "policy": "lfu-doorkeeper",
+        "model": "wiki-t-10",
+        "cache_size": 1E6,
+        "request_count": 100000,
+        "admission_threshold": 2,
+        "cms_epsilon": 0.001,
+        "cms_delta": 1e-6
+    },
+    {
+        "policy": "lfu-doorkeeper",
+        "model": "wiki-t-10",
+        "cache_size": 1E5,
+        "request_count": 100000,
+        "admission_threshold": 2,
+        "cms_epsilon": 0.001,
+        "cms_delta": 1e-6
+    },
+    {
+        "policy": "lfu-doorkeeper",
+        "model": "wiki-t-10",
+        "cache_size": 1E8,
+        "request_count": 100000,
+        "admission_threshold": 3,
+        "cms_epsilon": 0.001,
+        "cms_delta": 1e-6
+    },
+    {
+        "policy": "lfu-doorkeeper",
+        "model": "wiki-t-10",
+        "cache_size": 1E7,
+        "request_count": 100000,
+        "admission_threshold": 3,
+        "cms_epsilon": 0.001,
+        "cms_delta": 1e-6
+    },
+    {
         "policy": "lfu-sliding",
         "model": "wiki-t-10",
         "cache_size": 1E7,
@@ -76,6 +130,60 @@
         "request_count": 100000
     },
     {
+        "policy": "lfu-doorkeeper",
+        "model": "docker-registry-processed",
+        "cache_size": 1E8,
+        "request_count": 100000,
+        "admission_threshold": 2,
+        "cms_epsilon": 0.001,
+        "cms_delta": 1e-6
+    },
+    {
+        "policy": "lfu-doorkeeper",
+        "model": "docker-registry-processed",
+        "cache_size": 1E7,
+        "request_count": 100000,
+        "admission_threshold": 2,
+        "cms_epsilon": 0.001,
+        "cms_delta": 1e-6
+    },
+    {
+        "policy": "lfu-doorkeeper",
+        "model": "docker-registry-processed",
+        "cache_size": 1E6,
+        "request_count": 100000,
+        "admission_threshold": 2,
+        "cms_epsilon": 0.001,
+        "cms_delta": 1e-6
+    },
+    {
+        "policy": "lfu-doorkeeper",
+        "model": "docker-registry-processed",
+        "cache_size": 1E5,
+        "request_count": 100000,
+        "admission_threshold": 2,
+        "cms_epsilon": 0.001,
+        "cms_delta": 1e-6
+    },
+    {
+        "policy": "lfu-doorkeeper",
+        "model": "docker-registry-processed",
+        "cache_size": 1E8,
+        "request_count": 100000,
+        "admission_threshold": 3,
+        "cms_epsilon": 0.001,
+        "cms_delta": 1e-6
+    },
+    {
+        "policy": "lfu-doorkeeper",
+        "model": "docker-registry-processed",
+        "cache_size": 1E7,
+        "request_count": 100000,
+        "admission_threshold": 3,
+        "cms_epsilon": 0.001,
+        "cms_delta": 1e-6
+    },
+    {
         "policy": "lfu-sliding",
         "model": "docker-registry-processed",
         "cache_size": 1E7,
@@ -128,6 +236,42 @@
         "request_count": 100000
     },
     {
+        "policy": "lfu-doorkeeper",
+        "model": "wiki-t-10",
+        "cache_size": 1E6,
+        "request_count": 100000,
+        "admission_threshold": 2,
+        "cms_epsilon": 0.001,
+        "cms_delta": 1e-6
+    },
+    {
+        "policy": "lfu-doorkeeper",
+        "model": "wiki-t-10",
+        "cache_size": 1E5,
+        "request_count": 100000,
+        "admission_threshold": 2,
+        "cms_epsilon": 0.001,
+        "cms_delta": 1e-6
+    },
+    {
+        "policy": "lfu-doorkeeper",
+        "model": "wiki-t-10",
+        "cache_size": 1E6,
+        "request_count": 100000,
+        "admission_threshold": 3,
+        "cms_epsilon": 0.001,
+        "cms_delta": 1e-6
+    },
+    {
+        "policy": "lfu-doorkeeper",
+        "model": "wiki-t-10",
+        "cache_size": 1E5,
+        "request_count": 100000,
+        "admission_threshold": 3,
+        "cms_epsilon": 0.001,
+        "cms_delta": 1e-6
+    },
+    {
         "policy": "lfu-sliding",
         "model": "wiki-t-10",
         "cache_size": 1E6,
@@ -178,6 +322,42 @@
         "model": "docker-registry-processed",
         "cache_size": 1E5,
         "request_count": 100000
+    },
+    {
+        "policy": "lfu-doorkeeper",
+        "model": "docker-registry-processed",
+        "cache_size": 1E6,
+        "request_count": 100000,
+        "admission_threshold": 2,
+        "cms_epsilon": 0.001,
+        "cms_delta": 1e-6
+    },
+    {
+        "policy": "lfu-doorkeeper",
+        "model": "docker-registry-processed",
+        "cache_size": 1E5,
+        "request_count": 100000,
+        "admission_threshold": 2,
+        "cms_epsilon": 0.001,
+        "cms_delta": 1e-6
+    },
+    {
+        "policy": "lfu-doorkeeper",
+        "model": "docker-registry-processed",
+        "cache_size": 1E6,
+        "request_count": 100000,
+        "admission_threshold": 3,
+        "cms_epsilon": 0.001,
+        "cms_delta": 1e-6
+    },
+    {
+        "policy": "lfu-doorkeeper",
+        "model": "docker-registry-processed",
+        "cache_size": 1E5,
+        "request_count": 100000,
+        "admission_threshold": 3,
+        "cms_epsilon": 0.001,
+        "cms_delta": 1e-6
     },
     {
         "policy": "lfu-sliding",

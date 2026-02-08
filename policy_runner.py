@@ -10,6 +10,7 @@ from policies.lfu import LFU
 from policies.lru import LRU
 from policies.lfu_sliding import LFU_Sliding
 from policies.lfu_aging import LFU_Aging
+from policies.lfu_doorkeeper import LFU_Doorkeeper
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("caching-policies-runner")
@@ -18,7 +19,8 @@ POLICIES = {
     "lru": LRU,
     "lfu-sliding": LFU_Sliding,
     "lfu": LFU,
-    "lfu-aging": LFU_Aging
+    "lfu-aging": LFU_Aging,
+    "lfu-doorkeeper": LFU_Doorkeeper,
 }
 
 def main():
@@ -29,23 +31,46 @@ def main():
     parser.add_argument("--cache-size", type=int, required=False, help="Cache size", default=100)
     parser.add_argument("--window-size", type=int, required=False, help="Sliding window size (timestamp units)", default=100)
     parser.add_argument("--tau", type=float, required=False, help="Decay constant for LFU aging", default=3600.0)
+    parser.add_argument("--admission-threshold", type=int, required=False, default=2, help="Admit object on miss only if estimated freq >= this")
+    parser.add_argument("--cms-epsilon", type=float, required=False, default=0.001, help="CMS epsilon (error bound) for doorkeeper")
+    parser.add_argument("--cms-delta", type=float, required=False, default=1e-6, help="CMS delta (failure probability) for doorkeeper")
+    parser.add_argument("--cms-width", type=int, required=False, default=None, help="CMS width override for doorkeeper")
+    parser.add_argument("--cms-depth", type=int, required=False, default=None, help="CMS depth override for doorkeeper")
 
     args = parser.parse_args()
     
     logger.info(f"Running policy {args.policy} with model {args.model}")
     
-    policy_class = POLICIES.get(args.policy)
-    if not policy_class:
+    policy_factory = POLICIES.get(args.policy)
+    if not policy_factory:
         logger.error(f"Unknown policy: {args.policy}")
         return
     
-    policy_class_args = {}
+    policy_factory_args = {}
     if args.policy == "lfu-sliding":
-        policy_class_args['window_size'] = args.window_size
+        policy_factory_args['window_size'] = args.window_size
     elif args.policy == "lfu-aging":
-        policy_class_args['tau'] = args.tau
+        policy_factory_args['tau'] = args.tau
+    elif args.policy == "lfu-doorkeeper":
+        policy_factory_args.update(
+            dict(
+                threshold=args.admission_threshold,
+                epsilon=args.cms_epsilon,
+                delta=args.cms_delta,
+                width=args.cms_width,
+                depth=args.cms_depth,
+            )
+        )
 
-    cache = Cache(policy_class(**policy_class_args), Storage(args.cache_size))
+    policy_obj = policy_factory(**policy_factory_args)
+
+    admission_policy = None
+    if isinstance(policy_obj, tuple) and len(policy_obj) == 2:
+        eviction_policy, admission_policy = policy_obj
+    else:
+        eviction_policy = policy_obj
+
+    cache = Cache(eviction_policy, Storage(args.cache_size), admission_policy=admission_policy)
     state = State().attach_to(cache)
 
     traffic_reader = TrafficReader(args.model)
