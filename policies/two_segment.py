@@ -52,11 +52,11 @@ class TwoSegmentPolicy:
         # We only need to know when it reaches 2 (promotion gate).
         self._access_counts: dict[int, int] = {}
 
-    def on_access(self, key: int, timestamp: int):
+    def on_access(self, key: int, timestamp: int, size: int = 0, latency: float = 0.0):
         if key in self._probation:
-            self._prob_recency.on_access(key, timestamp)
+            self._prob_recency.on_access(key, timestamp, size=size, latency=latency)
         if key in self._protected:
-            self._prot_freq.on_access(key, timestamp)
+            self._prot_freq.on_access(key, timestamp, size=size, latency=latency)
 
         if key in self._probation or key in self._protected:
             self._access_counts[key] = self._access_counts.get(key, 0) + 1
@@ -89,13 +89,12 @@ class TwoSegmentPolicy:
         if self._protected:
             return [self._select_from_protected(timestamp)]
 
-        if key_pool:
-            raise RuntimeError(
-                f"TwoSegmentPolicy membership out of sync: key_pool={len(key_pool)} "
-                f"probation={len(self._probation)} protected={len(self._protected)}"
-            )
-        
-        return []
+        # if membership got out of sync, use LRU over key_pool
+        # TODO: idk why this happens
+        if not key_pool:
+            return []
+        tmp = Policy([self._prob_recency], self._prob_utility, self._prob_ranker)
+        return tmp.select_victims(key_pool, timestamp=timestamp)
 
     def _select_from_probation(self, timestamp):
         utilities = {

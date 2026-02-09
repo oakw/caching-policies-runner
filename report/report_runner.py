@@ -33,6 +33,9 @@ with open (os.path.join(BASE_DIR, 'config.json'), 'r') as file:
             "--cms-depth", str(int(run.get('cms_depth', 10))),
             "--size-utility", str(run.get('size_utility', 'freq_over_size')),
             "--protected-fraction", str(float(run.get('protected_fraction', 0.5))),
+            "--tiny-window-size", str(int(run.get('tiny_window_size', 100000))),
+            "--latency-utility", str(run.get('latency_utility', 'freq_over_size_times_latency')),
+            "--default-latency", str(float(run.get('default_latency', 1.0))),
         ], text=True, capture_output=True)
         return (i, run, result)
 
@@ -122,6 +125,13 @@ def group_label_for_table(run: dict) -> dict:
             result[key] = run.get(key)
     return result
 
+def additional_attributes_for_run(run: dict) -> dict:
+    result = {}
+    for key in sorted(run.keys()):
+        if key not in ["policy", "request_count", "model", "cache_size"]:
+            result[key] = run.get(key)
+    return result
+
 grouped_results = {}
 for result in all_results:
     key = group_key(result["run"])
@@ -159,15 +169,14 @@ for key, results in grouped_results.items():
 # Sort by policy, cache size, and model
 averaged_results.sort(key=lambda x: (x['run']['policy'], x['run']['cache_size'], x['run']['model']))
 
-md = "| Policy | Model | Cache Size | Size Utility | Admission Threshold | Hits | Misses | Accesses | Hit Object Size Sum | Hit Response Time Sum | User Time | Elapsed Time | Max RSS | Exit Code |"
-md += "\n|--------|-------|------------|--------------|---------------------|------|--------|----------|---------------------|----------------------|-----------|--------------|---------|-----------|"
+md = "| Policy | Model | Cache Size | Args | Hits | Misses | Accesses | Hit Object Size Sum | Hit Response Time Sum | User Time | Elapsed Time | Max RSS | Exit Code |"
+md += "\n|--------|-------|------------|---------------------|------|--------|----------|---------------------|----------------------|-----------|--------------|---------|-----------|"
 for result in averaged_results:
     md += (
         f"\n| {result['run'].get('policy')}"
         f" | {result['run'].get('model')}"
         f" | {result['run'].get('cache_size')}"
-        f" | {result['run'].get('size_utility') or ''}"
-        f" | {result['run'].get('admission_threshold') or ''}"
+        f" | {json.dumps(additional_attributes_for_run(result['run']))}"
         f" | {result['stats']['hits']}"
         f" | {result['stats']['misses']}"
         f" | {result['stats']['accesses']}"

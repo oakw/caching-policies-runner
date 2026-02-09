@@ -4,9 +4,9 @@ class Policy:
         self.utility_model = utility_model
         self.ranker = ranker
 
-    def on_access(self, key, timestamp):
+    def on_access(self, key, timestamp, size: int = 0, latency: float = 0.0):
         for f in self.features:
-            f.on_access(key, timestamp)
+            f.on_access(key, timestamp, size=size, latency=latency)
 
     def on_insert(self, key, timestamp):
         pass

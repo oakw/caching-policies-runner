@@ -7,7 +7,7 @@ class Cache:
         self.storage = storage
         self.admission_policy = admission_policy
 
-    def access(self, key: int, timestamp: int, size: int) -> list[str]:
+    def access(self, key: int, timestamp: int, size: int, latency: float = 0.0) -> list[str]:
         actions = []
         hit = self.storage.contains(key)
 
@@ -16,23 +16,45 @@ class Cache:
         else:
             actions.append("miss")
 
-        self.policy.on_access(key, timestamp)
+        self.policy.on_access(key, timestamp, size=size, latency=latency)
 
         if self.admission_policy is not None:
             self.admission_policy.on_access(key, timestamp, size, hit)
 
         used_capacity = self.storage.used_capacity()
         if not hit:
+            # Will check for the fullness of the cache twice
+            # That's because some policies may want to know the would-be victim before deciding on admission
+            if used_capacity + size > self.storage.capacity:
+                actions.append("select-victims")
+
+                all_keys = self.storage.keys()
+                victims = set(self.policy.select_victims(all_keys, timestamp=timestamp))
+
+                if (
+                    self.admission_policy is not None
+                    and hasattr(self.admission_policy, "set_victim")
+                    and len(victims) > 0
+                ):
+                    victim = next(iter(victims))
+                    try:
+                        self.admission_policy.set_victim(victim, int(self.storage.data.get(victim, 0)))
+                    except Exception:
+                        print(f"Warning: Failed to set victim {victim} with size {self.storage.data.get(victim, 0)} in admission policy.")
+                        pass
+
             if self.admission_policy is not None and not self.admission_policy.accept(key, timestamp, size):
                 actions.append("reject")
                 return actions
 
             if used_capacity + size > self.storage.capacity:
                 # Need to evict items
-                actions.append("select-victims")
+                if "select-victims" not in actions:
+                    actions.append("select-victims")
 
                 all_keys = self.storage.keys()
-                victims = set(self.policy.select_victims(all_keys, timestamp=timestamp))
+                if 'victims' not in locals():
+                    victims = set(self.policy.select_victims(all_keys, timestamp=timestamp))
                 while used_capacity + size - sum([self.storage.data[v] for v in victims]) > self.storage.capacity:
                     # Continue selecting victims until enough space is freed
                     if len(all_keys) == len(victims):

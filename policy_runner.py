@@ -13,9 +13,17 @@ from policies.lfu_aging import LFU_Aging
 from policies.lfu_doorkeeper import LFU_Doorkeeper
 from policies.lfu_byte import LFU_Byte
 from policies.two_segment import TwoSegmentPolicy
+from policies.lfu_latency_byte import LFU_LatencyByte
+from components.admission.tiny_lfu_byte import TinyLFUByteAdmission
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("caching-policies-runner")
+
+def tiny_lfu_byte_factory(storage: Storage, tiny_window_size: int = 100000):
+    eviction_policy = LFU_Byte(storage=storage, mode="freq_over_size")
+    admission_policy = TinyLFUByteAdmission(window_size=tiny_window_size)
+    return eviction_policy, admission_policy
+
 
 POLICIES = {
     "lru": LRU,
@@ -25,6 +33,8 @@ POLICIES = {
     "lfu-doorkeeper": LFU_Doorkeeper,
     "lfu-byte": LFU_Byte,
     "two-segment": TwoSegmentPolicy,
+    "tiny-lfu-byte": tiny_lfu_byte_factory,
+    "lfu-latency-byte": LFU_LatencyByte,
 }
 
 def main():
@@ -49,11 +59,33 @@ def main():
         help="Size-aware utility mode (only for lfu-byte)",
     )
     parser.add_argument(
+        "--latency-utility",
+        type=str,
+        required=False,
+        default="freq_over_size_times_latency",
+        choices=["freq_over_size_times_latency", "freq_times_latency_over_size"],
+        help="Latency+size-aware utility mode (only for lfu-latency-byte)",
+    )
+    parser.add_argument(
+        "--default-latency",
+        type=float,
+        required=False,
+        default=1.0,
+        help="Default latency used if trace lacks response_time (lfu-latency-byte)",
+    )
+    parser.add_argument(
         "--protected-fraction",
         type=float,
         required=False,
         default=0.5,
         help="Protected segment fraction in (0,1) for two-segment policy (object-count based)",
+    )
+    parser.add_argument(
+        "--tiny-window-size",
+        type=int,
+        required=False,
+        default=100000,
+        help="Sliding window size (timestamp units) for tiny-lfu-byte admission sketch",
     )
 
     args = parser.parse_args()
@@ -86,6 +118,12 @@ def main():
         policy_factory_args.update(dict(storage=storage, mode=args.size_utility))
     elif args.policy == "two-segment":
         policy_factory_args.update(dict(protected_fraction=args.protected_fraction))
+    elif args.policy == "lfu-latency-byte":
+        policy_factory_args.update(
+            dict(storage=storage, mode=args.latency_utility, default_latency=args.default_latency)
+        )
+    elif args.policy == "tiny-lfu-byte":
+        policy_factory_args.update(dict(storage=storage, tiny_window_size=args.tiny_window_size))
 
     policy_obj = policy_factory(**policy_factory_args)
 
@@ -106,7 +144,7 @@ def main():
     request_index = 0
     with tqdm.tqdm(total=request_count, desc="Simulating caching policy") as pbar:
         for req in traffic_reader.read_traffic():
-            hit = "hit" in cache.access(req.object_id, req.timestamp, req.object_size)
+            hit = "hit" in cache.access(req.object_id, req.timestamp, req.object_size, latency=req.response_time or 0.0)
             state.on_access(req.object_id, req.timestamp, hit, req.object_size, req.response_time)
             pbar.update(1)
 

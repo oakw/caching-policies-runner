@@ -5,7 +5,7 @@ class FrequencyFeature(Feature):
     def __init__(self):
         self.access_times: dict[int, list[int]] = {}
 
-    def on_access(self, key, timestamp):
+    def on_access(self, key, timestamp, size: int = 0, latency: float = 0.0):
         self.access_times.setdefault(key, []).append(timestamp)
 
     def value(self, key):
