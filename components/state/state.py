@@ -8,6 +8,8 @@ class State:
         self.last_timestamp = 0
         self.hit_object_size_sum = 0
         self.hit_response_time_sum = 0.0
+        self.total_object_size_sum = 0
+        self.total_response_time_sum = 0.0
 
     @property
     def capacity(self):
@@ -22,6 +24,8 @@ class State:
     def on_access(self, key: int, timestamp: int, hit: bool, object_size: int, response_time: float):
         self.access_count += 1
         self.last_timestamp = timestamp
+        self.total_object_size_sum += int(object_size)
+        self.total_response_time_sum += float(response_time or 0.0)
         if hit:
             self.hit_count += 1
             self.hit_object_size_sum += object_size
@@ -43,7 +47,9 @@ class State:
             "access_count": self.access_count,
             "last_timestamp": self.last_timestamp,
             "hit_object_size_sum": self.hit_object_size_sum,
-            "hit_response_time_sum": self.hit_response_time_sum
+            "hit_response_time_sum": self.hit_response_time_sum,
+            "total_object_size_sum": self.total_object_size_sum,
+            "total_response_time_sum": self.total_response_time_sum
         }
 
     def __repr__(self):
@@ -51,4 +57,6 @@ class State:
                 f"hit_count={self.hit_count}, miss_count={self.miss_count}, "
                 f"access_count={self.access_count}, last_timestamp={self.last_timestamp}, "
                 f"hit_object_size_sum={self.hit_object_size_sum}, "
-                f"hit_response_time_sum={self.hit_response_time_sum})")
+                f"hit_response_time_sum={self.hit_response_time_sum}, "
+                f"total_object_size_sum={self.total_object_size_sum}, "
+                f"total_response_time_sum={self.total_response_time_sum})")

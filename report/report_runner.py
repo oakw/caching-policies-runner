@@ -5,21 +5,27 @@ import subprocess
 import tqdm
 import re
 import concurrent.futures
+import threading
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 parser = argparse.ArgumentParser(description="Run policies defined in config.json and generate a report")
+parser.add_argument("--config-file", type=str, default=os.path.join(BASE_DIR, 'config.json'), help="Path to configuration JSON file")
 parser.add_argument("--run-repeats", type=int, default=1, help="Number of times to repeat each configuration for averaging")
 parser.add_argument("--thread-workers", type=int, default=max(1, (os.cpu_count() or 1) // 2), help="Number of worker threads to use for running configurations in parallel")
+parser.add_argument("--emit-file", type=str, default=False, help="File to emit results to instead of stdout")
 args = parser.parse_args()
 
+CONFIG_FILE = args.config_file
 RUN_REPEATS = args.run_repeats
 HALF_PROCESSORS = args.thread_workers
+EMIT_FILE = args.emit_file
 
 TIME_TEMPLATE = "<user>%U</user><system>%S</system><elapsed>%e</elapsed><max-rss>%M</max-rss><exit-code>%x</exit-code><cpu>%P</cpu>"
+semaphore = threading.Semaphore(HALF_PROCESSORS)
 
 all_results = []
-with open (os.path.join(BASE_DIR, 'config.json'), 'r') as file:
+with open (CONFIG_FILE, 'r') as file:
     config = json.load(file)
     config = config * RUN_REPEATS
 
@@ -62,6 +68,8 @@ with open (os.path.join(BASE_DIR, 'config.json'), 'r') as file:
                     size_match = re.search(r'size=(\d+)/(\d+)', line)
                     hit_object_size_sum_match = re.search(r'hit_object_size_sum=(\d+)', line)
                     hit_response_time_sum_match = re.search(r'hit_response_time_sum=([\d.]+)', line)
+                    object_size_sum_match = re.search(r'total_object_size_sum=(\d+)', line)
+                    response_time_sum_match = re.search(r'total_response_time_sum=([\d.]+)', line)
 
                     if hits_match:
                         stats['hits'] = int(hits_match.group(1))
@@ -76,6 +84,10 @@ with open (os.path.join(BASE_DIR, 'config.json'), 'r') as file:
                         stats['hit_object_size_sum'] = int(hit_object_size_sum_match.group(1))
                     if hit_response_time_sum_match:
                         stats['hit_response_time_sum'] = float(hit_response_time_sum_match.group(1))
+                    if object_size_sum_match:
+                        stats['object_size_sum'] = int(object_size_sum_match.group(1))
+                    if response_time_sum_match:
+                        stats['response_time_sum'] = float(response_time_sum_match.group(1))
 
             # Parse timing info from stderr using regex
             timing = {}
@@ -107,6 +119,11 @@ with open (os.path.join(BASE_DIR, 'config.json'), 'r') as file:
                 print(f"stdout: {result.stdout}")
                 print(f"stderr: {result.stderr}")
                 exit(1)
+
+            with semaphore:
+                if EMIT_FILE:
+                    with open(EMIT_FILE, "a") as f:
+                        f.write(json.dumps(dict(id=run.get('id', None), run=run, stats=stats, timing=timing), indent=2))
 
             all_results.append(dict(
                 run=run,
@@ -148,7 +165,11 @@ averaged_results = []
 for key, results in grouped_results.items():
     run0 = results[0]["run"]
 
-    avg_stats = {}
+    avg_stats = {
+        'object_size_sum': f"{results[0]['stats']['object_size_sum']:.2g}",
+        'response_time_sum': f"{results[0]['stats']['response_time_sum']:.2g}"
+    }
+
     for stat in ['hits', 'misses', 'accesses', 'current_size', 'hit_object_size_sum', 'hit_response_time_sum']:
         values = [r['stats'][stat] for r in results]
         avg_value = sum(values) / len(values)
@@ -195,8 +216,8 @@ for key, results in grouped_results.items():
 # Sort by policy, cache size, and model
 averaged_results.sort(key=lambda x: (x['run']['policy'], x['run']['cache_size'], x['run']['model']))
 
-md = "| Policy | Model | Cache Size | Args | Hits | Misses | Accesses | Hit Object Size Sum | Hit Response Time Sum | User Time | Elapsed Time | Max RSS | Exit Code | Hit Ratio | CPU per Access | CPU per Hit | Avg Hit Latency | Lightweightness"
-md += "\n|--------|-------|------------|---------------------|------|--------|----------|---------------------|----------------------|-----------|--------------|---------|-----------|----------|----------------|-------------|-----------------|-----------------"
+md = "| Policy | Model | Cache Size | Args | Hits | Misses | Accesses | Total Object Size Sum | Total Response Time Sum | Hit Object Size Sum | Hit Response Time Sum | User Time | Elapsed Time | Max RSS | Exit Code | Hit Ratio | CPU per Access | CPU per Hit | Avg Hit Latency | Lightweightness"
+md += "\n|--------|-------|------------|---------------------|------|--------|----------|---------------------|---------------------|---------------------|----------------------|-----------|--------------|---------|-----------|----------|----------------|-------------|-----------------|-----------------"
 for result in averaged_results:
     md += (
         f"\n| {result['run'].get('policy')}"
@@ -206,6 +227,8 @@ for result in averaged_results:
         f" | {result['stats']['hits']}"
         f" | {result['stats']['misses']}"
         f" | {result['stats']['accesses']}"
+        f" | {result['stats']['object_size_sum']}"
+        f" | {result['stats']['response_time_sum']}"
         f" | {result['stats']['hit_object_size_sum']}"
         f" | {result['stats']['hit_response_time_sum']}"
         f" | {result['timing']['user_time']}"

@@ -156,7 +156,7 @@ def main():
 
     logger.info(f"Policy {args.policy} with model {args.model} finished")
     stats = state.to_dict()
-    logger.info(f"Stats: hits={stats['hit_count']}, misses={stats['miss_count']}, accesses={stats['access_count']}, size={stats['current_size']}/{stats['capacity']}, hit_object_size_sum={stats['hit_object_size_sum']}, hit_response_time_sum={stats['hit_response_time_sum']}")
+    logger.info(f"Stats: hits={stats['hit_count']}, misses={stats['miss_count']}, accesses={stats['access_count']}, size={stats['current_size']}/{stats['capacity']}, hit_object_size_sum={stats['hit_object_size_sum']}, hit_response_time_sum={stats['hit_response_time_sum']}, total_object_size_sum={stats['total_object_size_sum']}, total_response_time_sum={stats['total_response_time_sum']}")
 
 if __name__ == "__main__":
     main()
