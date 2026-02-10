@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import subprocess
@@ -6,11 +7,16 @@ import re
 import concurrent.futures
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-RUN_REPEATS = 1
+
+parser = argparse.ArgumentParser(description="Run policies defined in config.json and generate a report")
+parser.add_argument("--run-repeats", type=int, default=1, help="Number of times to repeat each configuration for averaging")
+parser.add_argument("--thread-workers", type=int, default=max(1, (os.cpu_count() or 1) // 2), help="Number of worker threads to use for running configurations in parallel")
+args = parser.parse_args()
+
+RUN_REPEATS = args.run_repeats
+HALF_PROCESSORS = args.thread_workers
 
 TIME_TEMPLATE = "<user>%U</user><system>%S</system><elapsed>%e</elapsed><max-rss>%M</max-rss><exit-code>%x</exit-code><cpu>%P</cpu>"
-
-HALF_PROCESSORS = max(1, (os.cpu_count() or 1) // 2)
 
 all_results = []
 with open (os.path.join(BASE_DIR, 'config.json'), 'r') as file:
@@ -160,17 +166,37 @@ for key, results in grouped_results.items():
         'exit_code': results[0]['timing']['exit_code']
     }
 
+    hits = float(avg_stats['hits'].rstrip('*'))
+    accesses = float(avg_stats['accesses'].rstrip('*'))
+    hit_response_time_sum = float(avg_stats['hit_response_time_sum'].rstrip('*'))
+    user_time = avg_timing['user_time']
+    
+    hit_ratio = hits / accesses if accesses > 0 else 0
+    cpu_per_access = user_time / accesses if accesses > 0 else 0
+    cpu_per_hit = user_time / hits if hits > 0 else 0
+    avg_hit_latency = hit_response_time_sum / hits if hits > 0 else 0
+    lightweightness = hit_ratio / cpu_per_access if cpu_per_access > 0 else 0
+    
+    derived_metrics = {
+        'hit_ratio': f"{hit_ratio:.2g}",
+        'cpu_per_access': f"{cpu_per_access:.2g}",
+        'cpu_per_hit': f"{cpu_per_hit:.2g}",
+        'avg_hit_latency': f"{avg_hit_latency:.2g}",
+        'lightweightness': f"{lightweightness:.2g}"
+    }
+
     averaged_results.append({
         'run': group_label_for_table(run0),
         'stats': avg_stats,
-        'timing': avg_timing
+        'timing': avg_timing,
+        'derived': derived_metrics,
     })
 
 # Sort by policy, cache size, and model
 averaged_results.sort(key=lambda x: (x['run']['policy'], x['run']['cache_size'], x['run']['model']))
 
-md = "| Policy | Model | Cache Size | Args | Hits | Misses | Accesses | Hit Object Size Sum | Hit Response Time Sum | User Time | Elapsed Time | Max RSS | Exit Code |"
-md += "\n|--------|-------|------------|---------------------|------|--------|----------|---------------------|----------------------|-----------|--------------|---------|-----------|"
+md = "| Policy | Model | Cache Size | Args | Hits | Misses | Accesses | Hit Object Size Sum | Hit Response Time Sum | User Time | Elapsed Time | Max RSS | Exit Code | Hit Ratio | CPU per Access | CPU per Hit | Avg Hit Latency | Lightweightness"
+md += "\n|--------|-------|------------|---------------------|------|--------|----------|---------------------|----------------------|-----------|--------------|---------|-----------|----------|----------------|-------------|-----------------|-----------------"
 for result in averaged_results:
     md += (
         f"\n| {result['run'].get('policy')}"
@@ -186,6 +212,11 @@ for result in averaged_results:
         f" | {result['timing']['elapsed_time']}"
         f" | {result['timing']['max_rss']}"
         f" | {result['timing']['exit_code']}"
+        f" | {result['derived']['hit_ratio']}"
+        f" | {result['derived']['cpu_per_access']}"
+        f" | {result['derived']['cpu_per_hit']}"
+        f" | {result['derived']['avg_hit_latency']}"
+        f" | {result['derived']['lightweightness']}"
         " |"
     )
 
