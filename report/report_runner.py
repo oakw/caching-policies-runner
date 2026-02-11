@@ -8,7 +8,10 @@ import concurrent.futures
 import threading
 import random
 
-def run_config(i, run, timeout=3600):
+TIME_TEMPLATE = "<user>%U</user><system>%S</system><elapsed>%e</elapsed><max-rss>%M</max-rss><exit-code>%x</exit-code><cpu>%P</cpu>"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def run_config(i, run, timeout=3600) -> tuple[int, dict, subprocess.CompletedProcess]:
     result = subprocess.run([
         "/usr/bin/time", "-f", TIME_TEMPLATE,
         'timeout', str(timeout),
@@ -91,8 +94,6 @@ def extract_stats_and_timing(result):
     return stats, timing
 
 if __name__ == "__main__":
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
     parser = argparse.ArgumentParser(description="Run policies defined in config.json and generate a report")
     parser.add_argument("--config-file", type=str, default=os.path.join(BASE_DIR, 'config.json'), help="Path to configuration JSON file")
     parser.add_argument("--run-repeats", type=int, default=1, help="Number of times to repeat each configuration for averaging")
@@ -107,7 +108,6 @@ if __name__ == "__main__":
     EMIT_FILE = args.emit_file
     TIMEOUT = args.timeout
 
-    TIME_TEMPLATE = "<user>%U</user><system>%S</system><elapsed>%e</elapsed><max-rss>%M</max-rss><exit-code>%x</exit-code><cpu>%P</cpu>"
     semaphore = threading.Semaphore(THREAD_COUNT)
         
     all_results = []
