@@ -31,7 +31,14 @@ def run_config(i, run, timeout=3600) -> tuple[int, dict, subprocess.CompletedPro
         "--tiny-window-size", str(int(run.get('tiny_window_size', 100000))),
         "--latency-utility", str(run.get('latency_utility', 'freq_over_size_times_latency')),
         "--default-latency", str(float(run.get('default_latency', 1.0))),
+        "--victim-sample-proportion", str(float(run.get('victim_sample_proportion', 1.0))),
     ], text=True, capture_output=True)
+
+    if result.returncode != 0:
+        print(f"ERROR: Run {run} failed with return code {result.returncode}")
+        print(f"stdout: {result.stdout}")
+        print(f"stderr: {result.stderr}")
+        
     return (i, run, result)
 
 def extract_stats_and_timing(result):
@@ -176,8 +183,8 @@ if __name__ == "__main__":
         run0 = results[0]["run"]
 
         avg_stats = {
-            'object_size_sum': f"{results[0]['stats']['object_size_sum']:.2g}",
-            'response_time_sum': f"{results[0]['stats']['response_time_sum']:.2g}"
+            'object_size_sum': f"{results[0]['stats'].get('object_size_sum', 0):.2g}",
+            'response_time_sum': f"{results[0]['stats'].get('response_time_sum', 0):.2g}"
         }
 
         for stat in ['hits', 'misses', 'accesses', 'current_size', 'hit_object_size_sum', 'hit_response_time_sum']:

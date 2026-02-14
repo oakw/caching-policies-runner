@@ -107,6 +107,7 @@
         "policy": "lfu-aging",
         "model": "wiki-t-10",
         "cache_size": 1E7,
+        "victim-sample-proportion": 0.5,
         "request_count": 100000,
         "tau": 1000.0
     },
@@ -114,6 +115,7 @@
         "policy": "lfu-aging",
         "model": "wiki-t-10",
         "cache_size": 1E8,
+        "victim-sample-proportion": 0.5,
         "request_count": 100000,
         "tau": 1000.0
     },
@@ -281,6 +283,7 @@
         "policy": "lfu-aging",
         "model": "docker-registry-processed",
         "cache_size": 1E7,
+        "victim-sample-proportion": 0.5,
         "request_count": 100000,
         "tau": 1000.0
     },
@@ -288,6 +291,7 @@
         "policy": "lfu-aging",
         "model": "docker-registry-processed",
         "cache_size": 1E8,
+        "victim-sample-proportion": 0.5,
         "request_count": 100000,
         "tau": 1000.0
     },

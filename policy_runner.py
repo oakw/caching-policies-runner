@@ -15,6 +15,7 @@ from policies.lfu_byte import LFU_Byte
 from policies.two_segment import TwoSegmentPolicy
 from policies.lfu_latency_byte import LFU_LatencyByte
 from components.admission.tiny_lfu_byte import TinyLFUByteAdmission
+from components.policy import Policy
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("caching-policies-runner")
@@ -87,6 +88,13 @@ def main():
         default=100000,
         help="Sliding window size (timestamp units) for tiny-lfu-byte admission sketch",
     )
+    parser.add_argument(
+        "--victim-sample-proportion",
+        type=float,
+        required=False,
+        default=1.0,
+        help="Proportion of cache keys to evaluate during victim selection (0,1]",
+    )
 
     args = parser.parse_args()
     
@@ -133,6 +141,7 @@ def main():
     else:
         eviction_policy = policy_obj
 
+    eviction_policy.set_victim_sample_proportion(args.victim_sample_proportion)
     cache = Cache(eviction_policy, storage, admission_policy=admission_policy)
     state = State().attach_to(cache)
 

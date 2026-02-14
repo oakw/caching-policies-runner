@@ -7,6 +7,8 @@ from components.features.recency import RecencyFeature
 from components.policy import Policy
 from components.ranking.min_utility import MinUtilityRanker
 from components.utility.simple import SimpleUtility
+import math
+import random
 
 
 @dataclass
@@ -28,6 +30,7 @@ class TwoSegmentPolicy:
     objects (not bytes), since `Storage` is byte-capacity based and not easily split.
     """
 
+    _victim_sample_proportion: float = 1.0
     protected_fraction: float = 0.5
 
     def __post_init__(self):
@@ -51,6 +54,12 @@ class TwoSegmentPolicy:
         # How many times a key has been accessed since last insert.
         # We only need to know when it reaches 2 (promotion gate).
         self._access_counts: dict[int, int] = {}
+
+    def set_victim_sample_proportion(self, victim_sample_proportion: float) -> None:
+        vsp = float(victim_sample_proportion)
+        if not (0.0 < vsp <= 1.0):
+            raise ValueError("victim_sample_proportion must be in (0, 1]")
+        self._victim_sample_proportion = vsp
 
     def on_access(self, key: int, timestamp: int, size: int = 0, latency: float = 0.0):
         if key in self._probation:
@@ -82,7 +91,10 @@ class TwoSegmentPolicy:
         self._probation.intersection_update(key_pool)
         self._protected.intersection_update(key_pool)
 
-        # Prefer probation victims first
+        if self._victim_sample_proportion < 1.0:
+            key_pool_size = max(1, int(math.ceil(key_pool_size * self._victim_sample_proportion)))
+            key_pool = set(random.sample(key_pool, k=key_pool_size))
+
         if self._probation:
             return [self._select_from_probation(timestamp)]
 

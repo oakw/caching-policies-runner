@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from report.report_runner import run_config, extract_stats_and_timing
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
+run_ids = set()
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run configs remotely via coordination server")
@@ -30,6 +30,11 @@ def main() -> None:
             r.raise_for_status()
             run = r.json()
             run_id = run.get("run_id")
+
+            if run_id in run_ids:
+                print(f"Worker {worker_id} received duplicate run_id {run_id}, skipping...")
+                continue
+            run_ids.add(run_id)
 
             run = {k: v for k, v in run.items() if v != ""}
 
