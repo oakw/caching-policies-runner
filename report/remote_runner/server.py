@@ -30,6 +30,7 @@ CONFIG_COLUMNS: List[str] = [
     "tiny_window_size",
     "window_size",
     "expected_count",
+    "victim_sample_proportion"
 ]
 
 app = Flask(__name__)
