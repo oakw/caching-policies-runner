@@ -9,6 +9,7 @@ from components.ranking.min_utility import MinUtilityRanker
 from components.utility.simple import SimpleUtility
 import math
 import random
+from itertools import islice
 
 
 @dataclass
@@ -92,8 +93,8 @@ class TwoSegmentPolicy:
         self._protected.intersection_update(key_pool)
 
         if self._victim_sample_proportion < 1.0:
-            key_pool_size = max(1, int(math.ceil(key_pool_size * self._victim_sample_proportion)))
-            key_pool = set(random.sample(key_pool, k=key_pool_size))
+            key_pool_size = max(1, int(math.ceil(len(key_pool) * self._victim_sample_proportion)))
+            key_pool = set(islice(random.sample(tuple(key_pool), key_pool_size), key_pool_size))
 
         if self._probation:
             return [self._select_from_probation(timestamp)]

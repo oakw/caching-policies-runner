@@ -1,5 +1,6 @@
 import math
 import random
+from itertools import islice
 
 class Policy:
     _victim_sample_proportion = 1.0
@@ -13,7 +14,7 @@ class Policy:
         vsp = float(victim_sample_proportion)
         if not (0.0 < vsp <= 1.0):
             raise ValueError("victim_sample_proportion must be in (0, 1]")
-        self.victim_sample_proportion = vsp
+        self._victim_sample_proportion = vsp
 
     def on_access(self, key, timestamp, size: int = 0, latency: float = 0.0):
         for f in self.features:
@@ -38,7 +39,7 @@ class Policy:
             candidates = key_pool
         else:
             sample_size = max(1, int(math.ceil(pool_size * self._victim_sample_proportion)))
-            candidates = set(random.sample(key_pool, k=sample_size))
+            candidates = set(islice(random.sample(tuple(key_pool), sample_size), sample_size))
 
         utilities = {
             key: self.utility_model.compute(key, self.features, timestamp=timestamp) for key in candidates
