@@ -11,13 +11,13 @@ from components.utility.freq_size_latency import FreqSizeLatencyUtility
 
 
 LatencyByteMode = Literal[
-    "freq_over_size_times_latency",
+    "freq_times_size_times_latency",
     "freq_times_latency_over_size",
 ]
 
 def LFU_LatencyByte(
     storage: Storage,
-    mode: LatencyByteMode = "freq_over_size_times_latency",
+    mode: LatencyByteMode = "freq_times_size_times_latency",
     default_latency: float = 1.0,
 ):
     """

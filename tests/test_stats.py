@@ -24,7 +24,7 @@ EXPECTED = {
         20: {"hit": 0.12, "miss": 0.88},
         40: {"hit": 0.34, "miss": 0.66},
         60: {"hit": 0.54, "miss": 0.46},
-        80: {"hit": 0.66, "miss": 0.34},
+        80: {"hit": 0.70, "miss": 0.30},
         100: {"hit": 0.82, "miss": 0.18},
     },
     "lfu": {
@@ -58,7 +58,7 @@ def test_policy_hit_miss_ratios(policy_name, policy_factory, capacity):
 
     expected = EXPECTED[policy_name][capacity]
 
-    tolerance = 0.02
+    tolerance = 0.01
     assert math.isclose(hit_ratio, expected["hit"], rel_tol=tolerance, abs_tol=tolerance), \
         f"{policy_name.upper()} hit ratio {hit_ratio:.2f} != expected {expected['hit']:.2f} for capacity {capacity}"
     assert math.isclose(miss_ratio, expected["miss"], rel_tol=tolerance, abs_tol=tolerance), \

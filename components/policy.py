@@ -19,12 +19,16 @@ class Policy:
     def on_access(self, key, timestamp, size: int = 0, latency: float = 0.0):
         for f in self.features:
             f.on_access(key, timestamp, size=size, latency=latency)
+        if hasattr(self.ranker, "on_access"):
+            self.ranker.on_access(key, timestamp, size=size, latency=latency)
 
     def on_insert(self, key, timestamp):
-        pass
+        if hasattr(self.ranker, "on_insert"):
+            self.ranker.on_insert(key, timestamp)
 
     def on_evict(self, key):
-        pass
+        if hasattr(self.ranker, "on_evict"):
+            self.ranker.on_evict(key)
 
     def select_victims(self, key_pool: set, timestamp=None):
         if len(key_pool) == 0:

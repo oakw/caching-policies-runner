@@ -644,7 +644,7 @@
         "model": "wiki-t-10",
         "cache_size": 1E7,
         "request_count": 100000,
-        "latency_utility": "freq_over_size_times_latency",
+        "latency_utility": "freq_times_size_times_latency",
         "default_latency": 1.0
     },
     {
@@ -660,7 +660,7 @@
         "model": "docker-registry-processed",
         "cache_size": 1E7,
         "request_count": 100000,
-        "latency_utility": "freq_over_size_times_latency",
+        "latency_utility": "freq_times_size_times_latency",
         "default_latency": 1.0
     },
     {

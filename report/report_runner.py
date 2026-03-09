@@ -29,7 +29,7 @@ def run_config(i, run, timeout=3600) -> tuple[int, dict, subprocess.CompletedPro
         "--size-utility", str(run.get('size_utility', 'freq_over_size')),
         "--protected-fraction", str(float(run.get('protected_fraction', 0.5))),
         "--tiny-window-size", str(int(run.get('tiny_window_size', 100000))),
-        "--latency-utility", str(run.get('latency_utility', 'freq_over_size_times_latency')),
+        "--latency-utility", str(run.get('latency_utility', 'freq_times_size_times_latency')),
         "--default-latency", str(float(run.get('default_latency', 1.0))),
         "--victim-sample-proportion", str(float(run.get('victim_sample_proportion', 1.0))),
     ], text=True, capture_output=True)
@@ -42,7 +42,17 @@ def run_config(i, run, timeout=3600) -> tuple[int, dict, subprocess.CompletedPro
     return (i, run, result)
 
 def extract_stats_and_timing(result):
-    stats = {}
+    stats = {
+        'hits': 0,
+        'misses': 0,
+        'accesses': 0,
+        'current_size': 0,
+        'max_size': 0,
+        'hit_object_size_sum': 0,
+        'hit_response_time_sum': 0.0,
+        'object_size_sum': 0,
+        'response_time_sum': 0.0,
+    }    
     timing = {}
     
     for line in (result.stderr + result.stdout).split('\n'):
@@ -104,7 +114,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run policies defined in config.json and generate a report")
     parser.add_argument("--config-file", type=str, default=os.path.join(BASE_DIR, 'config.json'), help="Path to configuration JSON file")
     parser.add_argument("--run-repeats", type=int, default=1, help="Number of times to repeat each configuration for averaging")
-    parser.add_argument("--thread-workers", type=int, default=max(1, (os.cpu_count() or 1) // 2), help="Number of worker threads to use for running configurations in parallel")
+    parser.add_argument("--thread-workers", type=int, default=max(1, (os.cpu_count() - 2)), help="Number of worker threads to use for running configurations in parallel")
     parser.add_argument("--emit-file", type=str, default=False, help="File to emit results to instead of stdout")
     parser.add_argument("--timeout", type=int, default=3600, help="Timeout in seconds for each policy run")
     args = parser.parse_args()

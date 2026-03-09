@@ -63,8 +63,8 @@ def main():
         "--latency-utility",
         type=str,
         required=False,
-        default="freq_over_size_times_latency",
-        choices=["freq_over_size_times_latency", "freq_times_latency_over_size"],
+        default="freq_times_size_times_latency",
+        choices=["freq_times_size_times_latency", "freq_times_latency_over_size"],
         help="Latency+size-aware utility mode (only for lfu-latency-byte)",
     )
     parser.add_argument(
