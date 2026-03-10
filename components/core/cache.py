@@ -19,7 +19,7 @@ class Cache:
         self.policy.on_access(key, timestamp, size=size, latency=latency)
 
         if self.admission_policy is not None:
-            self.admission_policy.on_access(key, timestamp, size, hit)
+            self.admission_policy.on_access(key, timestamp, size, hit, latency)
 
         used_capacity = self.storage.used_capacity()
         if not hit:
@@ -38,12 +38,12 @@ class Cache:
                 ):
                     victim = next(iter(victims))
                     try:
-                        self.admission_policy.set_victim(victim, int(self.storage.data.get(victim, 0)))
+                        self.admission_policy.set_victim(victim, int(self.storage.data.get(victim, 0)), self.storage.latencies.get(victim, 0.0))
                     except Exception:
                         print(f"Warning: Failed to set victim {victim} with size {self.storage.data.get(victim, 0)} in admission policy.")
                         pass
 
-            if self.admission_policy is not None and not self.admission_policy.accept(key, timestamp, size):
+            if self.admission_policy is not None and not self.admission_policy.accept(key, timestamp, size, latency):
                 actions.append("reject")
                 return actions
 
@@ -72,7 +72,7 @@ class Cache:
             if not self.storage.is_full(size - 1):
                 # If still not full, insert the new item
                 actions.append(f"insert")
-                self.storage.insert(key, size)
+                self.storage.insert(key, size, latency)
                 self.policy.on_insert(key, timestamp)
 
         return actions

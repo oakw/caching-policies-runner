@@ -15,15 +15,10 @@ from policies.lfu_byte import LFU_Byte
 from policies.two_segment import TwoSegmentPolicy
 from policies.lfu_latency_byte import LFU_LatencyByte
 from policies.empty import Empty_Policy
-from components.admission.tiny_lfu_byte import TinyLFUByteAdmission
+from policies.tiny_lfu_byte_latency import tiny_lfu_byte_latency_factory
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("caching-policies-runner")
-
-def tiny_lfu_byte_factory(storage: Storage, tiny_window_size: int = 100000):
-    eviction_policy = LFU_Byte(storage=storage, mode="freq_over_size")
-    admission_policy = TinyLFUByteAdmission(window_size=tiny_window_size)
-    return eviction_policy, admission_policy
 
 
 POLICIES = {
@@ -34,7 +29,7 @@ POLICIES = {
     "lfu-doorkeeper": LFU_Doorkeeper,
     "lfu-byte": LFU_Byte,
     "two-segment": TwoSegmentPolicy,
-    "tiny-lfu-byte": tiny_lfu_byte_factory,
+    "tiny-lfu-byte-latency": tiny_lfu_byte_latency_factory,
     "lfu-latency-byte": LFU_LatencyByte,
     "empty": Empty_Policy,
 }
@@ -96,13 +91,6 @@ def main():
         default=1.0,
         help="Proportion of cache keys to evaluate during victim selection (0,1]",
     )
-    parser.add_argument(
-        "--warmup-proportion",
-        type=float,
-        required=False,
-        default=0.05,
-        help="Initial fraction of requests that are ignored for state capturing in [0,1)",
-    )
 
     args = parser.parse_args()
     
@@ -138,8 +126,15 @@ def main():
         policy_factory_args.update(
             dict(storage=storage, mode=args.latency_utility, default_latency=args.default_latency)
         )
-    elif args.policy == "tiny-lfu-byte":
-        policy_factory_args.update(dict(storage=storage, tiny_window_size=args.tiny_window_size))
+    elif args.policy == "tiny-lfu-byte-latency":
+        policy_factory_args.update(
+            dict(
+                storage=storage,
+                tiny_window_size=args.tiny_window_size,
+                mode=args.latency_utility,
+                default_latency=args.default_latency,
+            )
+        )
 
     policy_obj = policy_factory(**policy_factory_args)
 
@@ -159,13 +154,19 @@ def main():
         request_count = args.request_count
 
     request_index = 0
-    warmup_requests = int(request_count * float(args.warmup_proportion))
+    has_fulled_cache_once = False
 
     with tqdm.tqdm(total=request_count, desc="Simulating caching policy") as pbar:
         for req in traffic_reader.read_traffic():
-            hit = "hit" in cache.access(req.object_id, req.timestamp, req.object_size, latency=req.response_time or 0.0)
-            if request_index >= warmup_requests:
+            access_actions = cache.access(req.object_id, req.timestamp, req.object_size, latency=req.response_time or 0.0)
+            hit = "hit" in access_actions
+
+            if not has_fulled_cache_once and "select-victims" in access_actions:
+                has_fulled_cache_once = True
+            if has_fulled_cache_once:
+                # Only start recording stats after the cache has been filled at least once to reduce bias
                 state.on_access(req.object_id, req.timestamp, hit, req.object_size, req.response_time)
+            
             pbar.update(1)
 
             request_index += 1

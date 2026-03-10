@@ -612,28 +612,28 @@
         "protected_fraction": 0.8
     },
     {
-        "policy": "tiny-lfu-byte",
+        "policy": "tiny-lfu-byte-latency",
         "model": "wiki-t-10",
         "cache_size": 1E7,
         "request_count": 100000,
         "tiny_window_size": 100000
     },
     {
-        "policy": "tiny-lfu-byte",
+        "policy": "tiny-lfu-byte-latency",
         "model": "wiki-t-10",
         "cache_size": 1E6,
         "request_count": 100000,
         "tiny_window_size": 100000
     },
     {
-        "policy": "tiny-lfu-byte",
+        "policy": "tiny-lfu-byte-latency",
         "model": "docker-registry-processed",
         "cache_size": 1E7,
         "request_count": 100000,
         "tiny_window_size": 100000
     },
     {
-        "policy": "tiny-lfu-byte",
+        "policy": "tiny-lfu-byte-latency",
         "model": "docker-registry-processed",
         "cache_size": 1E6,
         "request_count": 100000,
