@@ -32,6 +32,7 @@ def run_config(i, run, timeout=3600) -> tuple[int, dict, subprocess.CompletedPro
         "--latency-utility", str(run.get('latency_utility', 'freq_times_size_times_latency')),
         "--default-latency", str(float(run.get('default_latency', 1.0))),
         "--victim-sample-proportion", str(float(run.get('victim_sample_proportion', 1.0))),
+        "--warmup-proportion", str(float(run.get('warmup_proportion', 0.05))),
     ], text=True, capture_output=True)
 
     if result.returncode != 0:

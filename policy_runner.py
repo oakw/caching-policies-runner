@@ -14,8 +14,8 @@ from policies.lfu_doorkeeper import LFU_Doorkeeper
 from policies.lfu_byte import LFU_Byte
 from policies.two_segment import TwoSegmentPolicy
 from policies.lfu_latency_byte import LFU_LatencyByte
+from policies.empty import Empty_Policy
 from components.admission.tiny_lfu_byte import TinyLFUByteAdmission
-from components.policy import Policy
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("caching-policies-runner")
@@ -36,6 +36,7 @@ POLICIES = {
     "two-segment": TwoSegmentPolicy,
     "tiny-lfu-byte": tiny_lfu_byte_factory,
     "lfu-latency-byte": LFU_LatencyByte,
+    "empty": Empty_Policy,
 }
 
 def main():
@@ -95,6 +96,13 @@ def main():
         default=1.0,
         help="Proportion of cache keys to evaluate during victim selection (0,1]",
     )
+    parser.add_argument(
+        "--warmup-proportion",
+        type=float,
+        required=False,
+        default=0.05,
+        help="Initial fraction of requests that are ignored for state capturing in [0,1)",
+    )
 
     args = parser.parse_args()
     
@@ -151,10 +159,13 @@ def main():
         request_count = args.request_count
 
     request_index = 0
+    warmup_requests = int(request_count * float(args.warmup_proportion))
+
     with tqdm.tqdm(total=request_count, desc="Simulating caching policy") as pbar:
         for req in traffic_reader.read_traffic():
             hit = "hit" in cache.access(req.object_id, req.timestamp, req.object_size, latency=req.response_time or 0.0)
-            state.on_access(req.object_id, req.timestamp, hit, req.object_size, req.response_time)
+            if request_index >= warmup_requests:
+                state.on_access(req.object_id, req.timestamp, hit, req.object_size, req.response_time)
             pbar.update(1)
 
             request_index += 1
