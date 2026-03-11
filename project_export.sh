@@ -10,5 +10,7 @@ tar -czf "$export_dir.tar.gz" \
     policies/ \
     report/ \
     traffic/models/wiki-t-10/ \
-    traffic/models/docker-registry-processed/ \
+    traffic/models/docker-dal09/ \
+    traffic/models/docker-lon02/ \
+    traffic/models/letapartika/ \
     traffic/reader.py

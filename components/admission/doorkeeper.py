@@ -31,8 +31,8 @@ class DoorkeeperCMSAdmission(AdmissionPolicy):
 
         self.cms = CountMinSketch(width=int(self.width), depth=int(self.depth), conservative=self.conservative)
 
-    def on_access(self, key: int, timestamp: int, size: int, hit: bool) -> None:
+    def on_access(self, key: int, timestamp: int, size: int, hit: bool, latency: float) -> None:
         self.cms.increment(key, 1)
 
-    def accept(self, key: int, timestamp: int, size: int) -> bool:
+    def accept(self, key: int, timestamp: int, size: int, latency: float) -> bool:
         return self.cms.estimate(key) >= self.threshold

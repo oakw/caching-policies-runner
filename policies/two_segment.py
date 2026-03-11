@@ -1,15 +1,8 @@
 from __future__ import annotations
-
 from dataclasses import dataclass
-
-from components.features.frequency import FrequencyFeature
-from components.features.recency import RecencyFeature
-from components.ranking.lfu_ranker import LFURanker
-from components.ranking.lru_ranker import LRURanker
-from components.utility.simple import SimpleUtility
+from collections import defaultdict, OrderedDict
 import math
 import random
-from itertools import islice
 
 
 @dataclass
@@ -27,8 +20,7 @@ class TwoSegmentPolicy:
       1) Evict from probation first (LRU)
       2) If probation empty, evict from protected (LFU)
 
-    Protected segment size is controlled by `protected_fraction` of total number of
-    objects (not bytes), since `Storage` is byte-capacity based and not easily split.
+    Since this handles two segments, it is implemented using policy interface but does not extend it.
     """
 
     _victim_sample_proportion: float = 1.0
@@ -36,25 +28,14 @@ class TwoSegmentPolicy:
 
     def __post_init__(self):
         if not (0.0 < float(self.protected_fraction) < 1.0):
-            raise ValueError("protected_fraction must be in (0, 1)")
+            raise ValueError("protected_fraction must be in (0,1)")
 
-        # Probation (LRU)
-        self._prob_recency = RecencyFeature()
-        self._prob_utility = SimpleUtility(self._prob_recency)
-        self._prob_ranker = LRURanker()
-
-        # Protected (LFU)
-        self._prot_freq = FrequencyFeature()
-        self._prot_utility = SimpleUtility(self._prot_freq)
-        self._prot_ranker = LFURanker()
-
-        # Segment membership
-        self._probation: set[int] = set()
-        self._protected: set[int] = set()
-
-        # How many times a key has been accessed since last insert.
-        # We only need to know when it reaches 2 (promotion gate).
-        self._access_counts: dict[int, int] = {}
+        self._probation: OrderedDict[int, None] = OrderedDict()
+        self._freq: dict[int, OrderedDict[int, None]] = defaultdict(OrderedDict)
+        self._key_freq: dict[int, int] = {}
+        self._min_freq: int = 1
+        self._access_count: dict[int, int] = {}
+        self._max_protected: int = 1
 
     def set_victim_sample_proportion(self, victim_sample_proportion: float) -> None:
         vsp = float(victim_sample_proportion)
@@ -62,89 +43,111 @@ class TwoSegmentPolicy:
             raise ValueError("victim_sample_proportion must be in (0, 1]")
         self._victim_sample_proportion = vsp
 
-    def on_access(self, key: int, timestamp: int, size: int = 0, latency: float = 0.0):
+    def _recompute_limit(self) -> None:
+        total = len(self._probation) + len(self._key_freq)
+        self._max_protected = max(1, int(total * float(self.protected_fraction)))
+
+    def on_insert(self, key: int, timestamp: int | None = None):
+        self.on_evict(key)
+        self._probation[key] = None
+        self._access_count[key] = 0
+        self._recompute_limit()
+
+    def on_access(self, key: int, timestamp: int | None = None, size: int = 0, latency: float = 0.0):
         if key in self._probation:
-            self._prob_recency.on_access(key, timestamp, size=size, latency=latency)
-            self._prob_ranker.on_access(key, timestamp, size=size, latency=latency)
-        if key in self._protected:
-            self._prot_freq.on_access(key, timestamp, size=size, latency=latency)
-            self._prot_ranker.on_access(key, timestamp, size=size, latency=latency)
+            self._probation.move_to_end(key)
+        elif key in self._key_freq:
+            self._increase_freq(key)
+        else:
+            return
 
-        if key in self._probation or key in self._protected:
-            self._access_counts[key] = self._access_counts.get(key, 0) + 1
-
-            # Promote on second hit: inserted -> (miss) -> access_count==0 in cache,
-            # first hit makes it 1, second hit makes it 2.
-            if key in self._probation and self._access_counts[key] >= 2:
-                self._promote_to_protected(key)
-
-    def on_insert(self, key: int, timestamp: int):
-        self._probation.add(key)
-        self._protected.discard(key)
-
-        self._access_counts[key] = 0
-        self._prob_recency.on_access(key, timestamp)
-        self._prob_ranker.on_insert(key, timestamp)
+        self._access_count[key] = self._access_count.get(key, 0) + 1
+        if key in self._probation and self._access_count[key] >= 2:
+            self._promote(key)
 
     def on_evict(self, key: int):
-        self._probation.discard(key)
-        self._protected.discard(key)
-        self._access_counts.pop(key, None)
+        self._probation.pop(key, None)
 
-        self._prob_ranker.on_evict(key)
-        self._prot_ranker.on_evict(key)
+        f = self._key_freq.pop(key, None)
+        if f is not None:
+            bucket = self._freq.get(f)
+            if bucket is not None:
+                bucket.pop(key, None)
+                if not bucket:
+                    self._freq.pop(f, None)
+                    if self._min_freq == f:
+                        self._min_freq = min(self._freq, default=1)
 
-    def select_victims(self, key_pool: set, timestamp=None):
-        self._probation.intersection_update(key_pool)
-        self._protected.intersection_update(key_pool)
+        self._access_count.pop(key, None)
+        self._recompute_limit()
 
-        if self._probation:
-            return [self._select_from_probation(self._probation, timestamp)]
+    def _sample(self, keys: list[int]) -> list[int]:
+        if self._victim_sample_proportion >= 1.0 or len(keys) <= 1:
+            return keys
+        k = max(1, int(math.ceil(len(keys) * self._victim_sample_proportion)))
+        return random.sample(keys, k)
 
-        if self._protected:
-            return [self._select_from_protected(self._protected, timestamp)]
+    def select_victims(self, key_pool: set[int] | None = None, timestamp=None):
+        if key_pool is None or not key_pool:
+            raise ValueError("select_victims needs a non-empty key_pool")
 
-        return []
+        # prefer probation (LRU)
+        candidates = [k for k in self._probation.keys() if k in key_pool]
+        if candidates:
+            sample = set(self._sample(candidates))
+            for k in self._probation.keys():
+                if k in sample:
+                    return [k]
+            raise RuntimeError("probation sample non-empty but no victim found")
 
-    def _select_from_probation(self, key_pool, timestamp):
-        candidates = self._probation & set(key_pool)
-        if not candidates:
-            return next(iter(key_pool))
-        if len(candidates) == 1:
-            return next(iter(candidates))
-        utilities = {k: self._prob_utility.compute(k, [self._prob_recency], timestamp=timestamp) for k in candidates}
-        return self._prob_ranker.select(utilities)
+        # else protected (LFU)
+        prot_candidates = [k for k in self._key_freq.keys() if k in key_pool]
+        if prot_candidates:
+            sample = self._sample(prot_candidates)
+            missing = [k for k in sample if k not in self._key_freq]
+            if missing:
+                raise RuntimeError(f"protected sample contains keys missing frequency: {missing[:5]}")
+            victim = min(sample, key=lambda k: self._key_freq[k])
+            return [victim]
 
-    def _select_from_protected(self, key_pool, timestamp):
-        candidates = self._protected & set(key_pool)
-        if not candidates:
-            return next(iter(key_pool))
-        if len(candidates) == 1:
-            return next(iter(candidates))
-        utilities = {k: self._prot_utility.compute(k, [self._prot_freq], timestamp=timestamp) for k in candidates}
-        return self._prot_ranker.select(utilities)
+        raise RuntimeError(
+            "TwoSegmentPolicy state out of sync: no probation/protected key is in key_pool"
+        )
 
-    def _promote_to_protected(self, key: int):
+    def _promote(self, key: int) -> None:
         if key not in self._probation:
             return
-        self._probation.discard(key)
-        self._protected.add(key)
+        self._probation.pop(key, None)
 
-        self._prob_ranker.on_evict(key)
-        self._prot_ranker.on_insert(key, self._prob_recency.value(key))
+        f = 1
+        self._key_freq[key] = f
+        self._freq[f][key] = None
+        self._min_freq = 1
+        self._recompute_limit()
+        self._ensure_protected_limit()
 
-        # Enforce protected segment size (object-count based).
-        total = len(self._probation) + len(self._protected)
-        if total <= 0:
-            return
+    def _increase_freq(self, key: int) -> None:
+        f = self._key_freq[key]
+        bucket = self._freq[f]
+        bucket.pop(key, None)
 
-        max_protected = max(1, int(total * float(self.protected_fraction)))
+        if not bucket:
+            self._freq.pop(f, None)
+            if self._min_freq == f:
+                self._min_freq = min(self._freq, default=f + 1)
 
-        while len(self._protected) > max_protected:
-            victim = self._select_from_protected(self._protected, timestamp=None)
-            # all is full, so demote to probation; do not reset access count
-            self._protected.discard(victim)
-            self._probation.add(victim)
+        f += 1
+        self._key_freq[key] = f
+        self._freq[f][key] = None
 
-            self._prot_ranker.on_evict(victim)
-            self._prob_ranker.on_insert(victim, self._prob_recency.value(victim))
+    def _ensure_protected_limit(self) -> None:
+        # demote LFU victims until protected segment fits the limit.
+        while len(self._key_freq) > self._max_protected and self._freq:
+            victim = next(iter(self._freq[self._min_freq]))
+            self._freq[self._min_freq].pop(victim, None)
+            if not self._freq[self._min_freq]:
+                self._freq.pop(self._min_freq, None)
+                self._min_freq = min(self._freq, default=1)
+
+            self._key_freq.pop(victim, None)
+            self._probation[victim] = None
