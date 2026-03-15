@@ -90,7 +90,7 @@ def get_run():
                 WHERE finished_at IS NOT NULL
                 GROUP BY config_id
             ) r ON r.config_id = c.id
-            WHERE COALESCE(r.completed, 0) < c.expected_count
+            WHERE COALESCE(r.completed, 0) < CAST(c.expected_count as decimal)
             """
         ).fetchall()
 
